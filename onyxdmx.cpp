@@ -305,14 +305,16 @@ int handleMessage(char *szBuffer)
 	else if(strncmp(szBuffer, "chan ", 5) == 0)
 	{
 		channel = (int)szBuffer[5];
-		fprintf(stdout, "*** channel=%lx\n", channel);
-		//lpfnDllSetData(channel, data);
+		fprintf(stdout, "recv channel=%lx\n", channel);
+		lpfnDllSetData(channel, data);
 		return 1;
 	}
 	else if(strncmp(szBuffer, "data ", 5) == 0)
 	{
+		/*char num = szBuffer[5];
+		int n = atoi(num.c_str());*/
 		data = (int)szBuffer[5];
-		fprintf(stdout, "*** data=%lx\n", data);
+		fprintf(stdout, "recv data=%lx\n", data);
 		lpfnDllSetData(channel, data);
 		return 1;
 	}
@@ -331,7 +333,7 @@ int handleMessage(char *szBuffer)
 	{
 		return -1;
 	}
-	else
+	else 
 	{
 		fprintf(stdout, "*** unrecognised command\n");
 		return 0;
