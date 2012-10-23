@@ -304,8 +304,8 @@ int handleMessage(char *szBuffer)
 	}
 	else if(strncmp(szBuffer, "chan ", 5) == 0)
 	{
-		channel = (int)szBuffer[5];
-		fprintf(stdout, "recv channel=%lx\n", channel);
+		channel = atoi(szBuffer + 5 );
+		fprintf(stdout, "recv channel=%u\n", channel);
 		lpfnDllSetData(channel, data);
 		return 1;
 	}
@@ -313,8 +313,8 @@ int handleMessage(char *szBuffer)
 	{
 		/*char num = szBuffer[5];
 		int n = atoi(num.c_str());*/
-		data = (int)szBuffer[5];
-		fprintf(stdout, "recv data=%lx\n", data);
+		data = atoi(&szBuffer[5]);
+		fprintf(stdout, "recv data=%u\n", data);
 		lpfnDllSetData(channel, data);
 		return 1;
 	}
