@@ -18,12 +18,14 @@ DWORD tm = GetTickCount();
 typedef UINT (CALLBACK* LPFNDLLSTARTDEVICE)();
 typedef UINT (CALLBACK* LPFNDLLSTOPDEVICE)();
 typedef UINT (CALLBACK* LPFNDLLSETDATA)(LONG,LONG);
+typedef UINT (CALLBACK* LPFNDLLSETCHANNELCOUNT)(LONG);
 
 HINSTANCE hDLL;               // Handle to DLL
 LPFNDLLSTARTDEVICE lpfnDllStartDevice;			// Function pointer
 LPFNDLLSTOPDEVICE lpfnDllStopDevice;			// Function pointer
 LPFNDLLSETDATA lpfnDllSetData;			// Function pointer
-LONG channel, data;
+LPFNDLLSETCHANNELCOUNT lpfnDllSetChannelCount;			// Function pointer
+LONG ichn, rchn, gchn, bchn, data, startaddr;
 
 //extern "C" __declspec(dllimport) void StartDevice();
 //extern "C" __declspec(dllimport) void SetData(long Channel, long Data);
@@ -302,20 +304,39 @@ int handleMessage(char *szBuffer)
 	{
 		return StartMidiOut(&szBuffer[5]);
 	}
-	else if(strncmp(szBuffer, "chan ", 5) == 0)
+	else if(strncmp(szBuffer, "ichn ", 5) == 0)
 	{
-		channel = atoi(szBuffer + 5 );
-		fprintf(stdout, "recv channel=%u\n", channel);
-		lpfnDllSetData(channel, data);
+		ichn = atoi(szBuffer + 5 );
+		fprintf(stdout, "recv ichn=%u\n", ichn);
+		lpfnDllSetData(startaddr, ichn);
 		return 1;
 	}
-	else if(strncmp(szBuffer, "data ", 5) == 0)
+	else if(strncmp(szBuffer, "rchn ", 5) == 0)
 	{
-		/*char num = szBuffer[5];
-		int n = atoi(num.c_str());*/
-		data = atoi(&szBuffer[5]);
-		fprintf(stdout, "recv data=%u\n", data);
-		lpfnDllSetData(channel, data);
+		rchn = atoi(szBuffer + 5 );
+		fprintf(stdout, "recv rchn=%u\n", rchn);
+		lpfnDllSetData(startaddr + 1, rchn);
+		return 1;
+	}
+	else if(strncmp(szBuffer, "gchn ", 5) == 0)
+	{
+		gchn = atoi(szBuffer + 5 );
+		fprintf(stdout, "recv gchn=%u\n", gchn);
+		lpfnDllSetData(startaddr + 2, gchn);
+		return 1;
+	}
+	else if(strncmp(szBuffer, "bchn ", 5) == 0)
+	{
+		bchn = atoi(szBuffer + 5 );
+		fprintf(stdout, "recv bchn=%u\n", bchn);
+		lpfnDllSetData(startaddr + 3, bchn);
+		return 1;
+	}
+	else if(strncmp(szBuffer, "addr ", 5) == 0)
+	{
+		startaddr = atoi(&szBuffer[5]);
+		fprintf(stdout, "recv addr=%u\n", startaddr);
+		lpfnDllSetChannelCount(startaddr + 3);
 		return 1;
 	}
 	else if(strcmp(szBuffer, "close") == 0)
@@ -370,6 +391,7 @@ int main(int argc, char** argv)
 		lpfnDllStartDevice = (LPFNDLLSTARTDEVICE)GetProcAddress(hDLL,"StartDevice");
 		lpfnDllStopDevice = (LPFNDLLSTOPDEVICE)GetProcAddress(hDLL,"StopDevice");
 		lpfnDllSetData = (LPFNDLLSETDATA)GetProcAddress(hDLL,"SetData");
+		lpfnDllSetChannelCount = (LPFNDLLSETCHANNELCOUNT)GetProcAddress(hDLL,"SetChannelCount");
 
 		if (!lpfnDllStartDevice)
 		{
@@ -386,12 +408,16 @@ int main(int argc, char** argv)
 			// handle the error
 			FreeLibrary(hDLL);       
 		}
+		if (!lpfnDllSetChannelCount)
+		{
+			// handle the error
+			FreeLibrary(hDLL);       
+		}
 		else
 		{
+			startaddr = 1;
 			// call the function
-			channel = 2;
-			data = 1;
-			lpfnDllSetData(channel, data);
+			lpfnDllSetChannelCount(startaddr+3);
 		}
 	}
 	else
@@ -409,15 +435,6 @@ int main(int argc, char** argv)
     // close the pipe to exit the app
     while ( !feof( stdin ) )
     {
-		/*for (int i=0;i<254;i++)
-		{
-
-			channel++;
-			if (channel>16) channel = 1;
-			data++;
-			if (data>254) data = 1;
-			lpfnDllSetData(channel, i);
-		}*/
 		// poll for 
 		char ch;
 		int iCharsRead = fread( &ch, 1, 1, stdin);
